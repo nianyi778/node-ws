@@ -20,7 +20,6 @@ const NAME = process.env.NAME || '';                       // 节点名称
 const PORT = process.env.PORT || 3000;                     // http和ws服务端口
 const PROXY_AUTH = process.env.PROXY_AUTH || '';           // HTTP代理认证，格式: username:password，留空则不需要认证
 const PROXY_PATH = process.env.PROXY_PATH || 'proxy';      // HTTP代理路径前缀
-const PADDING_ENABLED = process.env.PADDING_ENABLED !== 'false'; // 流量填充防封，默认开启
 
 // DNS 缓存，提高重复请求的性能
 const DNS_CACHE = new Map();
@@ -46,13 +45,6 @@ const CDN_NODES = [
   'icook.hk',
   'singapore.com'
 ];
-
-// 随机填充数据生成器（防流量特征识别）
-function generatePadding() {
-  if (!PADDING_ENABLED) return Buffer.alloc(0);
-  const len = Math.floor(Math.random() * 64) + 16; // 16-80 字节随机填充
-  return crypto.randomBytes(len);
-}
 
 // 获取随机 CDN 节点
 function getRandomCDN() {
@@ -254,7 +246,6 @@ const httpServer = http.createServer((req, res) => {
     return;
   } else if (req.url === `/${SUB_PATH}`) {
     const namePart = NAME ? `${NAME}-${ISP}` : ISP;
-    const cdn = getRandomCDN();
     // 优化的连接参数：更好的伪装和稳定性
     const vlessParams = `encryption=none&security=tls&sni=${DOMAIN}&fp=randomized&type=ws&host=${DOMAIN}&path=%2F${WSPATH}%3Fed%3D2560&alpn=h2%2Chttp%2F1.1`;
     const trojanParams = `security=tls&sni=${DOMAIN}&fp=randomized&type=ws&host=${DOMAIN}&path=%2F${WSPATH}%3Fed%3D2560&alpn=h2%2Chttp%2F1.1`;
