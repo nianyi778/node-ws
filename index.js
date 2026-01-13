@@ -34,14 +34,25 @@ const PROXY_AUTH_BASE64 = PROXY_AUTH ? Buffer.from(PROXY_AUTH).toString('base64'
 const UUID_HASH = crypto.createHash('sha224').update(UUID).digest('hex');
 
 // 多 CDN 节点，用于负载均衡和防封
-const CDN_NODES = [
+// 支持通过环境变量 CDN_NODES 覆盖，格式："a.com,b.com,c.com"
+const DEFAULT_CDN_NODES = [
   'cdns.doon.eu.org',
-  'cdn.jsdelivr.net', 
-  'cloudflare.com',
+  'cdnjs.cloudflare.com',
+  'cdn.jsdelivr.net',
+  'images.weserv.nl',
   'time.cloudflare.com',
+  'cloudflare.com',
   'icook.hk',
   'singapore.com'
 ];
+const CDN_NODES = (process.env.CDN_NODES || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
+  .slice(0, 12);
+if (CDN_NODES.length === 0) {
+  CDN_NODES.push(...DEFAULT_CDN_NODES);
+}
 
 // 已不再需要随机选择，订阅生成时直接遍历 CDN_NODES 前若干项
 
@@ -244,9 +255,9 @@ const httpServer = http.createServer((req, res) => {
     const vlessParams = `encryption=none&security=tls&sni=${DOMAIN}&fp=randomized&type=ws&host=${DOMAIN}&path=%2F${WSPATH}%3Fed%3D2560&alpn=h2%2Chttp%2F1.1`;
     const trojanParams = `security=tls&sni=${DOMAIN}&fp=randomized&type=ws&host=${DOMAIN}&path=%2F${WSPATH}%3Fed%3D2560&alpn=h2%2Chttp%2F1.1`;
     
-    // 生成多个 CDN 节点的订阅
+    // 生成多个 CDN 节点的订阅（最多取前 4 个，兼顾速度与可用性）
     const subscriptions = [];
-    CDN_NODES.slice(0, 3).forEach((cdnNode, idx) => {
+    CDN_NODES.slice(0, Math.min(4, CDN_NODES.length)).forEach((cdnNode, idx) => {
       subscriptions.push(`vless://${UUID}@${cdnNode}:443?${vlessParams}#${namePart}-${idx + 1}`);
       subscriptions.push(`trojan://${UUID}@${cdnNode}:443?${trojanParams}#${namePart}-TR-${idx + 1}`);
     });
