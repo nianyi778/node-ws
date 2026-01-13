@@ -25,10 +25,7 @@ const PROXY_PATH = process.env.PROXY_PATH || 'proxy';      // HTTP代理路径�
 const DNS_CACHE = new Map();
 const DNS_CACHE_TTL = 300000; // 5分钟缓存
 
-// 连接池配置
-const CONNECTION_POOL = new Map();
-const POOL_MAX_SIZE = 50;
-const POOL_IDLE_TIMEOUT = 60000; // 60秒空闲超时
+// 连接池配置（已移除未使用实现，仅保留 http.Agent 复用）
 
 // 预计算认证凭证，避免每次请求都计算
 const PROXY_AUTH_BASE64 = PROXY_AUTH ? Buffer.from(PROXY_AUTH).toString('base64') : '';
@@ -46,10 +43,7 @@ const CDN_NODES = [
   'singapore.com'
 ];
 
-// 获取随机 CDN 节点
-function getRandomCDN() {
-  return CDN_NODES[Math.floor(Math.random() * CDN_NODES.length)];
-}
+// 已不再需要随机选择，订阅生成时直接遍历 CDN_NODES 前若干项
 
 let ISP = '';
 const GetISP = async () => {
